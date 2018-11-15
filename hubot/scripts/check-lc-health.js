@@ -25,28 +25,25 @@ function initSdkForCN() {
 async function checkStorage(res) {
   try {
     const TestClass = storage.Object.extend('TestClass');
-    const query = new storage.Query(TestClass);
-    const testObj = await query.first();
-    if (testObj.get('msg').length > 0) {
-      res.send(`${g_region} Storage - read: ✓`);
-    } else {
-      res.send(`${g_region} Storage - read: ✗ Did not receive expected data`);
-    }
 
+    const query = new storage.Query(TestClass);
     const newObj = new TestClass();
     newObj.set('msg', 'testmsg');
     const savedObj = await newObj.save();
     const id = savedObj.getObjectId()
-    if (id && id.length > 0) {
-      res.send(`${g_region} Storage - write: ✓`);
-    } else {
-      res.send(`${g_region} Storage - write: ✗ Invalid ObjectId`);
+    if (!id || id.length === 0) {
+      throw new Error('Invalid ObjectId');
     }
 
-    await savedObj.destroy();
-    res.send(`${g_region} Storage - delete: ✓`);
+    const testObj = await query.first();
+    if (!testObj.get('msg') || testObj.get('msg').length === 0) {
+      throw new Error('Did not receive expected data');
+    }
+
+    await testObj.destroy();
+    res.send(`✓ ${g_region} Storage (read/write/delete)`);
   } catch (e) {
-    res.send(`${g_region} Storage - delete: ✗ ${e}`);
+    res.send(`✗ ${g_region} Storage (read/write/delete): ${e}`);
   }
 }
 
@@ -54,9 +51,9 @@ async function checkLeanEngineWeb(res, url) {
   try {
     const response = await fetch(url);
     if (response.ok) {
-      res.send(`${g_region} LeanEngine - web hosting: ✓ `)
+      res.send(`✓ ${g_region} LeanEngine - web hosting`);
     } else {
-      res.send(`${g_region} LeanEngine - web hosting: ✗ ${response.status}`)
+      throw new Error(`Received HTTP Error ${response.status}`);
     }
   } catch (e) {
     res.send(`${g_region} LeanEngine - web hosting: ✗ ${e}`);
@@ -66,18 +63,10 @@ async function checkLeanEngineWeb(res, url) {
 module.exports = robot => {
   robot.respond(/check/i, async res => {
     initSdkForUS();
-    try {
-      await checkStorage(res);
-      await checkLeanEngineWeb(res, process.env.US_LC_LE_WEB_URL);
-    } catch (e) {
-      res.send(`✗ Error: ${e}`);
-    }
+    await checkStorage(res);
+    await checkLeanEngineWeb(res, process.env.US_LC_LE_WEB_URL);
     initSdkForCN();
-    try {
-      await checkStorage(res);
-      await checkLeanEngineWeb(res, process.env.CN_LC_LE_WEB_URL);
-    } catch (e) {
-      res.send(`✗ Error: ${e}`);
-    }
+    await checkStorage(res);
+    await checkLeanEngineWeb(res, process.env.CN_LC_LE_WEB_URL);
   });
 };
