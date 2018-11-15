@@ -56,7 +56,7 @@ async function checkLeanEngineWeb(res, url) {
       throw new Error(`Received HTTP Error ${response.status}`);
     }
   } catch (e) {
-    res.send(`${g_region} LeanEngine - web hosting: ✗ ${e}`);
+    res.send(`✗ ${g_region} LeanEngine - web hosting: ${e}`);
   }
 }
 
