@@ -1,0 +1,27 @@
+{
+  "name": "R2",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Hong Jiang <j@1byte.io>",
+  "description": "Check if all systems are operational.",
+  "dependencies": {
+    "hubot": "^3.1.1",
+    "hubot-diagnostics": "^1.0.0",
+    "hubot-google-images": "^0.2.7",
+    "hubot-google-translate": "^0.2.1",
+    "hubot-help": "^1.0.1",
+    "hubot-maps": "0.0.3",
+    "hubot-pugme": "^0.1.1",
+    "hubot-redis-brain": "^1.0.0",
+    "hubot-rules": "^1.0.0",
+    "hubot-scripts": "^2.17.2",
+    "hubot-shipit": "^0.2.1",
+    "hubot-zulip": "^0.1.0",
+    "leancloud-realtime": "^4.2.0",
+    "leancloud-storage": "^3.11.0",
+    "node-fetch": "^2.3.0"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}
