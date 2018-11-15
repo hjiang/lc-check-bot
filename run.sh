@@ -2,7 +2,7 @@
 
 set -e
 
-source $HOME/.lc_check_botrc
+. $HOME/.lc_check_botrc
 docker run \
   -e CN_LC_APP_ID \
   -e CN_LC_APP_KEY \
