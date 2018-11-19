@@ -1,4 +1,5 @@
 const storage = require('leancloud-storage');
+const LiveQuery = require('leancloud-storage/live-query');
 const { Realtime, TextMessage, Event } = require('leancloud-realtime');
 const fetch = require('node-fetch');
 
@@ -118,15 +119,44 @@ async function checkRTM(res) {
   }
 }
 
+async function checkLiveQuery(res) {
+  var newObj = null;
+  try {
+    const TestClass = LiveQuery.Object.extend('TestClass');
+    const query = new LiveQuery.Query(TestClass);
+    query.equalTo('msg', 'test lq');
+    const liveQuery = await query.subscribe();
+    var receivedNewItem = false;
+    liveQuery.on('create', item => {
+      if (item.get('msg') === 'test lq') {
+        receivedNewItem = true;
+      } else {
+        res.send(`${FAIL} ${g_region} LiveQuery: received unmatching data!`);
+      }
+    });
+    newObj = new TestClass();
+    newObj.set('msg', 'test lq');
+    await newObj.save();
+    await waitUntil(() => receivedNewItem);
+    res.send(`${PASS} ${g_region} LiveQuery`);
+  } catch(e) {
+    res.send(`${FAIL} ${g_region} LiveQuery: ${e}`)
+  } finally {
+    newObj && await newObj.destroy();
+  }
+}
+
 module.exports = robot => {
   robot.respond(/check/i, async res => {
     initSdkForUS();
     await checkStorage(res);
     await checkLeanEngineWeb(res, process.env.US_LC_LE_WEB_URL);
     await checkRTM(res);
+    await checkLiveQuery(res);
     initSdkForCN();
     await checkStorage(res);
     await checkLeanEngineWeb(res, process.env.CN_LC_LE_WEB_URL);
     await checkRTM(res);
+    await checkLiveQuery(res);
   });
 };
