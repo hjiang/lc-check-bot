@@ -168,9 +168,6 @@ async function checkPlay(res) {
     play.play.on(play.Event.CONNECTED, () => {
       play.play.joinOrCreateRoom('deathmatch');
     });
-    play.play.on(play.Event.ROOM_CREATED, () => {
-      roomJoined = true;
-    });
     play.play.on(play.Event.ROOM_JOINED, () => {
       roomJoined = true;
     });
