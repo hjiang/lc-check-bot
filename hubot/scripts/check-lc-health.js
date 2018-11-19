@@ -68,7 +68,7 @@ async function checkStorage(res) {
     }
 
     await testObj.destroy();
-    res.send(`✓ ${g_region} LeanStorage (read/write/delete)`);
+    res.send(`<span style="color:green">✓</span> ${g_region} LeanStorage (read/write/delete)`);
   } catch (e) {
     res.send(`✗ ${g_region} LeanStorage (read/write/delete): ${e}`);
   }
