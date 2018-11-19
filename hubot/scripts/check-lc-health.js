@@ -4,6 +4,8 @@ const fetch = require('node-fetch');
 
 var g_region = null;
 var g_rtm = null;
+const PASS = '**✔**'
+const FAIL = '**✘**'
 
 function initSdkForUS() {
   storage.applicationId = null;
@@ -68,9 +70,9 @@ async function checkStorage(res) {
     }
 
     await testObj.destroy();
-    res.send(`**✓** ${g_region} LeanStorage (read/write/delete)`);
+    res.send(`${PASS} ${g_region} LeanStorage (read/write/delete)`);
   } catch (e) {
-    res.send(`✗ ${g_region} LeanStorage (read/write/delete): ${e}`);
+    res.send(`${FAIL} ${g_region} LeanStorage (read/write/delete): ${e}`);
   }
 }
 
@@ -78,12 +80,12 @@ async function checkLeanEngineWeb(res, url) {
   try {
     const response = await fetch(url);
     if (response.ok) {
-      res.send(`✓ ${g_region} LeanEngine - web hosting`);
+      res.send(`${PASS} ${g_region} LeanEngine - web hosting`);
     } else {
       throw new Error(`Received HTTP Error ${response.status}`);
     }
   } catch (e) {
-    res.send(`✗ ${g_region} LeanEngine - web hosting: ${e}`);
+    res.send(`${FAIL} ${g_region} LeanEngine - web hosting: ${e}`);
   }
 }
 
@@ -99,7 +101,7 @@ async function checkRTM(res) {
       if (msg.getText() === 'test msg') {
         bobReceivedMessage = true;
       } else {
-        res.send(`✗ ${g_region} LeanMessage: Error: bob received unmatching message!`);
+        res.send(`${FAIL} ${g_region} LeanMessage: Error: bob received unmatching message!`);
       }
     });
     const msg = await conv.send(new TextMessage('test msg'));
@@ -107,9 +109,9 @@ async function checkRTM(res) {
       throw new Error('Alice did not receive back expected message.');
     }
     await waitUntil(() => bobReceivedMessage);
-    res.send(`✓ ${g_region} LeanMessage`);
+    res.send(`${PASS} ${g_region} LeanMessage`);
   } catch (e) {
-    res.send(`✗ ${g_region} LeanMessage: ${e}`);
+    res.send(`${FAIL} ${g_region} LeanMessage: ${e}`);
   } finally {
     alice && alice.close();
     bob && bob.close();
