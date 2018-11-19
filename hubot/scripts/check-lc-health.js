@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 var g_region = null;
 var g_rtm = null;
-const PASS = '**✔**'
+const PASS = '**✓**'
 const FAIL = '**✘**'
 
 function initSdkForUS() {
