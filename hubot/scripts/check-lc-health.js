@@ -2,6 +2,7 @@ const storage = require('leancloud-storage');
 const LiveQuery = require('leancloud-storage/live-query');
 const { Realtime, TextMessage, Event } = require('leancloud-realtime');
 const fetch = require('node-fetch');
+const play = require('@leancloud/play');
 
 var g_region = null;
 var g_rtm = null;
@@ -18,7 +19,12 @@ function initSdkForUS() {
     appId: process.env.US_LC_APP_ID,
     appKey: process.env.US_LC_APP_KEY
   });
-  g_region = 'US'
+  play.play.init({
+    appId: process.env.US_LC_APP_ID,
+    appKey: process.env.US_LC_APP_KEY,
+    region: play.Region.NorthAmerica,
+  });
+  g_region = '🇺🇸 '
 }
 
 function initSdkForCN() {
@@ -32,7 +38,12 @@ function initSdkForCN() {
     appId: process.env.CN_LC_APP_ID,
     appKey: process.env.CN_LC_APP_KEY
   });
-  g_region = 'CN'
+  play.play.init({
+    appId: process.env.CN_LC_APP_ID,
+    appKey: process.env.CN_LC_APP_KEY,
+    region: play.Region.NorthChina,
+  });
+  g_region = '🇨🇳 '
 }
 
 function waitUntil(cond, seconds) {
@@ -97,8 +108,8 @@ async function checkRTM(res) {
     alice = await g_rtm.createIMClient('alice');
     bob = await g_rtm.createIMClient('bob');
     var bobReceivedMessage = false;
-    const conv = await alice.createConversation({members: ['bob'], name: 'test'});
-    bob.on(Event.MESSAGE, function(msg, _) {
+    const conv = await alice.createConversation({ members: ['bob'], name: 'test' });
+    bob.on(Event.MESSAGE, function (msg, _) {
       if (msg.getText() === 'test msg') {
         bobReceivedMessage = true;
       } else {
@@ -139,10 +150,46 @@ async function checkLiveQuery(res) {
     await newObj.save();
     await waitUntil(() => receivedNewItem);
     res.send(`${PASS} ${g_region} LiveQuery`);
-  } catch(e) {
+  } catch (e) {
     res.send(`${FAIL} ${g_region} LiveQuery: ${e}`)
   } finally {
     newObj && await newObj.destroy();
+  }
+}
+
+async function checkPlay(res) {
+  play.play.userId = 'ftwlol'
+  try {
+    var roomJoined = false;
+    play.play.on(play.Event.Error, (err) => {
+      const { code, detail } = err;
+      res.send(`${FAIL} ${g_region} Play: (${code}) ${detail}`);
+    });
+    play.play.on(play.Event.CONNECTED, () => {
+      play.play.joinOrCreateRoom('deathmatch');
+    });
+    play.play.on(play.Event.ROOM_CREATED, () => {
+      roomJoined = true;
+    });
+    play.play.on(play.Event.ROOM_JOINED, () => {
+      roomJoined = true;
+    });
+    play.play.on(play.Event.CONNECT_FAILED, (error) => {
+      res.send(`${FAIL} ${g_region} Play: Failed to connect`);
+    });
+    play.play.on(play.Event.ROOM_JOIN_FAILED, () => {
+      res.send(`${FAIL} ${g_region} Play: Failed to join room`);
+    });
+    play.play.on(play.Event.ROOM_CREATE_FAILED, () => {
+      res.send(`${FAIL} ${g_region} Play: Failed to create room`);
+    });
+    play.play.connect();
+    await waitUntil(() => roomJoined);
+    res.send(`${PASS} ${g_region} Play`);
+  } catch (e) {
+    res.send(`${FAIL} ${g_region} Play: ${e}`)
+  } finally {
+    play.play.disconnect();
   }
 }
 
@@ -153,10 +200,12 @@ module.exports = robot => {
     await checkLeanEngineWeb(res, process.env.US_LC_LE_WEB_URL);
     await checkRTM(res);
     await checkLiveQuery(res);
+    // await checkPlay(res);
     initSdkForCN();
     await checkStorage(res);
     await checkLeanEngineWeb(res, process.env.CN_LC_LE_WEB_URL);
     await checkRTM(res);
     await checkLiveQuery(res);
+    await checkPlay(res);
   });
 };

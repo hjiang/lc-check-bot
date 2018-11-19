@@ -5,6 +5,7 @@
   "author": "Hong Jiang <j@1byte.io>",
   "description": "Check if all systems are operational.",
   "dependencies": {
+    "@leancloud/play": "^0.14.0",
     "hubot": "^3.1.1",
     "hubot-diagnostics": "^1.0.0",
     "hubot-google-images": "^0.2.7",
