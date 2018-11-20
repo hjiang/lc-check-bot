@@ -6,8 +6,8 @@ const play = require('@leancloud/play');
 
 var g_region = null;
 var g_rtm = null;
-const PASS = '**✓**'
-const FAIL = '**✘**'
+const PASS = '**✓**';
+const FAIL = '**✘**';
 
 function initSdkForUS() {
   storage.applicationId = null;
@@ -63,7 +63,7 @@ function waitUntil(cond, seconds) {
   });
 }
 
-async function checkStorage(res) {
+async function checkStorage(sender) {
   try {
     const TestClass = storage.Object.extend('TestClass');
 
@@ -71,7 +71,7 @@ async function checkStorage(res) {
     const newObj = new TestClass();
     newObj.set('msg', 'testmsg');
     const savedObj = await newObj.save();
-    const id = savedObj.getObjectId()
+    const id = savedObj.getObjectId();
     if (!id || id.length === 0) {
       throw new Error('Invalid ObjectId');
     }
@@ -82,26 +82,26 @@ async function checkStorage(res) {
     }
 
     await testObj.destroy();
-    res.send(`${PASS} ${g_region} LeanStorage (read/write/delete)`);
+    sender.pass(`LeanStorage (read/write/delete)`);
   } catch (e) {
-    res.send(`${FAIL} ${g_region} LeanStorage (read/write/delete): ${e}`);
+    sender.fail(`LeanStorage (read/write/delete): ${e}`);
   }
 }
 
-async function checkLeanEngineWeb(res, url) {
+async function checkLeanEngineWeb(sender, url) {
   try {
     const response = await fetch(url);
     if (response.ok) {
-      res.send(`${PASS} ${g_region} LeanEngine - web hosting`);
+      sender.pass(`LeanEngine - web hosting`);
     } else {
       throw new Error(`Received HTTP Error ${response.status}`);
     }
   } catch (e) {
-    res.send(`${FAIL} ${g_region} LeanEngine - web hosting: ${e}`);
+    sender.fail(`LeanEngine - web hosting: ${e}`);
   }
 }
 
-async function checkRTM(res) {
+async function checkRTM(sender) {
   var alice = null;
   var bob = null
   try {
@@ -113,7 +113,7 @@ async function checkRTM(res) {
       if (msg.getText() === 'test msg') {
         bobReceivedMessage = true;
       } else {
-        res.send(`${FAIL} ${g_region} LeanMessage: Error: bob received unmatching message!`);
+        sender.fail(`LeanMessage: Error: bob received unmatching message!`);
       }
     });
     const msg = await conv.send(new TextMessage('test msg'));
@@ -121,16 +121,16 @@ async function checkRTM(res) {
       throw new Error('Alice did not receive back expected message.');
     }
     await waitUntil(() => bobReceivedMessage);
-    res.send(`${PASS} ${g_region} LeanMessage`);
+    sender.pass(`LeanMessage`);
   } catch (e) {
-    res.send(`${FAIL} ${g_region} LeanMessage: ${e}`);
+    sender.fail(`LeanMessage: ${e}`);
   } finally {
     alice && alice.close();
     bob && bob.close();
   }
 }
 
-async function checkLiveQuery(res) {
+async function checkLiveQuery(sender) {
   var newObj = null;
   try {
     const TestClass = LiveQuery.Object.extend('TestClass');
@@ -142,28 +142,28 @@ async function checkLiveQuery(res) {
       if (item.get('msg') === 'test lq') {
         receivedNewItem = true;
       } else {
-        res.send(`${FAIL} ${g_region} LiveQuery: received unmatching data!`);
+        sender.fail(`LiveQuery: received unmatching data!`);
       }
     });
     newObj = new TestClass();
     newObj.set('msg', 'test lq');
     await newObj.save();
     await waitUntil(() => receivedNewItem);
-    res.send(`${PASS} ${g_region} LiveQuery`);
+    sender.pass(`LiveQuery`);
   } catch (e) {
-    res.send(`${FAIL} ${g_region} LiveQuery: ${e}`)
+    sender.fail(`LiveQuery: ${e}`)
   } finally {
     newObj && await newObj.destroy();
   }
 }
 
-async function checkPlay(res) {
+async function checkPlay(sender) {
   play.play.userId = 'ftwlol'
   try {
     var roomJoined = false;
     play.play.on(play.Event.Error, (err) => {
       const { code, detail } = err;
-      res.send(`${FAIL} ${g_region} Play: (${code}) ${detail}`);
+      sender.fail(`Play: (${code}) ${detail}`);
     });
     play.play.on(play.Event.CONNECTED, () => {
       play.play.joinOrCreateRoom('deathmatch');
@@ -172,37 +172,86 @@ async function checkPlay(res) {
       roomJoined = true;
     });
     play.play.on(play.Event.CONNECT_FAILED, (error) => {
-      res.send(`${FAIL} ${g_region} Play: Failed to connect`);
+      sender.fail(`Play: Failed to connect`);
     });
     play.play.on(play.Event.ROOM_JOIN_FAILED, () => {
-      res.send(`${FAIL} ${g_region} Play: Failed to join room`);
+      sender.fail(`Play: Failed to join room`);
     });
     play.play.on(play.Event.ROOM_CREATE_FAILED, () => {
-      res.send(`${FAIL} ${g_region} Play: Failed to create room`);
+      sender.fail(`Play: Failed to create room`);
     });
     play.play.connect();
     await waitUntil(() => roomJoined);
-    res.send(`${PASS} ${g_region} Play`);
+    sender.pass(`Play`);
   } catch (e) {
-    res.send(`${FAIL} ${g_region} Play: ${e}`)
+    sender.fail(`Play: ${e}`)
   } finally {
     play.play.disconnect();
   }
 }
 
-module.exports = robot => {
-  robot.respond(/check/i, async res => {
+var g_monitor_us = false;
+
+async function startUSMonitor(robot) {
+  const sender = {
+    pass: _ => {},
+    fail: msg => {
+      robot.messageRoom('stream:ops-support topic:R2', `${FAIL} ${g_region} ${msg}`);
+    }
+  }
+  const check = async () => {
     initSdkForUS();
-    await checkStorage(res);
-    await checkLeanEngineWeb(res, process.env.US_LC_LE_WEB_URL);
-    await checkRTM(res);
-    await checkLiveQuery(res);
+    await checkStorage(sender);
+    await checkLeanEngineWeb(sender, process.env.US_LC_LE_WEB_URL);
+    await checkRTM(sender);
+    await checkLiveQuery(sender);
+    if (g_monitor_us) {
+      setTimeout(check, 300000);
+    }
+  }
+  robot.messageRoom('stream:ops-support topic:R2', '.');
+  await check();
+}
+
+module.exports = robot => {
+  robot.respond(/monitor-us (\S*)/, async res => {
+    const action = res.match[1];
+    res.send(action);
+    if (action === 'start') {
+      if (g_monitor_us) return;
+      res.send('Started monitoring LeanCloud US. Errors will be sent to "stream:ops-support topic:R2".');
+      g_monitor_us = true;
+      await startUSMonitor(robot);
+    } else if (action === 'stop') {
+      res.send('Turning off monitoring.');
+      g_monitor_us = false;
+    } else if (action === 'status') {
+      res.send(`Monitoring is ${g_monitor_us ? 'on' : 'off'}`);
+    }
+  });
+
+  robot.respond(/check/i, async res => {
+    const sender = {
+      pass: msg => {
+        res.send(`${PASS} ${g_region} ${msg}`);
+      },
+      fail: msg => {
+        res.send(`${FAIL} ${g_region} ${msg}`);
+      }
+    };
+    res.send('Manual check started.');
+    initSdkForUS();
+    await checkStorage(sender);
+    await checkLeanEngineWeb(sender, process.env.US_LC_LE_WEB_URL);
+    await checkRTM(sender);
+    await checkLiveQuery(sender);
     // await checkPlay(res);
     initSdkForCN();
-    await checkStorage(res);
-    await checkLeanEngineWeb(res, process.env.CN_LC_LE_WEB_URL);
-    await checkRTM(res);
-    await checkLiveQuery(res);
-    await checkPlay(res);
+    await checkStorage(sender);
+    await checkLeanEngineWeb(sender, process.env.CN_LC_LE_WEB_URL);
+    await checkRTM(sender);
+    await checkLiveQuery(sender);
+    await checkPlay(sender);
+    res.send('Manual check finished.')
   });
 };
