@@ -197,6 +197,7 @@ async function startUSMonitor(robot) {
     pass: _ => {},
     fail: msg => {
       robot.messageRoom('stream:ops-support topic:R2', `${FAIL} ${g_region} ${msg}`);
+      robot.messageRoom('pm-with:hjiang', `${FAIL} ${g_region} ${msg}`);
     }
   }
   const check = async () => {
