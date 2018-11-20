@@ -209,14 +209,12 @@ async function startUSMonitor(robot) {
       setTimeout(check, 300000);
     }
   }
-  robot.messageRoom('stream:ops-support topic:R2', '.');
   await check();
 }
 
 module.exports = robot => {
   robot.respond(/monitor-us (\S*)/, async res => {
     const action = res.match[1];
-    res.send(action);
     if (action === 'start') {
       if (g_monitor_us) return;
       res.send('Started monitoring LeanCloud US. Errors will be sent to "stream:ops-support topic:R2".');
