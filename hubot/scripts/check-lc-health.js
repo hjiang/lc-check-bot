@@ -132,11 +132,12 @@ async function checkRTM(sender) {
 
 async function checkLiveQuery(sender) {
   var newObj = null;
+  var liveQuery = null;
   try {
     const TestClass = LiveQuery.Object.extend('TestClass');
     const query = new LiveQuery.Query(TestClass);
     query.equalTo('msg', 'test lq');
-    const liveQuery = await query.subscribe();
+    liveQuery = await query.subscribe();
     var receivedNewItem = false;
     liveQuery.on('create', item => {
       if (item.get('msg') === 'test lq') {
@@ -153,6 +154,7 @@ async function checkLiveQuery(sender) {
   } catch (e) {
     sender.fail(`LiveQuery: ${e}`)
   } finally {
+    liveQuery && await liveQuery.unsubscribe();
     newObj && await newObj.destroy();
   }
 }
