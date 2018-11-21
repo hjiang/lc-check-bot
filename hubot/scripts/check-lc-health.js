@@ -189,6 +189,7 @@ async function checkPlay(sender) {
     sender.fail(`Play: ${e}`)
   } finally {
     play.play.disconnect();
+    play.play.removeAllListeners();
   }
 }
 
