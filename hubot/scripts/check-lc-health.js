@@ -255,4 +255,19 @@ module.exports = robot => {
     await checkPlay(sender);
     res.send('Manual check finished.')
   });
+
+  robot.respond(/play/i, async res => {
+    const sender = {
+      pass: msg => {
+        res.send(`${PASS} ${g_region} ${msg}`);
+      },
+      fail: msg => {
+        res.send(`${FAIL} ${g_region} ${msg}`);
+      }
+    };
+    res.send('Manual check started.');
+    initSdkForCN();
+    await checkPlay(sender);
+    res.send('Manual check finished.')
+  });
 };
