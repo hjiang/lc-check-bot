@@ -160,7 +160,7 @@ async function checkLiveQuery(sender) {
 }
 
 async function checkPlay(sender) {
-  play.play.userId = 'ftwlol'
+  play.play.userId = 'ftwlol';
   try {
     var roomJoined = false;
     play.play.on(play.Event.Error, (err) => {
@@ -174,13 +174,13 @@ async function checkPlay(sender) {
       roomJoined = true;
     });
     play.play.on(play.Event.CONNECT_FAILED, (error) => {
-      sender.fail(`Play: Failed to connect`);
+      sender.fail(`Play: Failed to connect: (${error.code}) ${error.detail}`);
     });
-    play.play.on(play.Event.ROOM_JOIN_FAILED, () => {
-      sender.fail(`Play: Failed to join room`);
+    play.play.on(play.Event.ROOM_JOIN_FAILED, (error) => {
+      sender.fail(`Play: Failed to join room: (${error.code}) ${error.detail}`);
     });
-    play.play.on(play.Event.ROOM_CREATE_FAILED, () => {
-      sender.fail(`Play: Failed to create room`);
+    play.play.on(play.Event.ROOM_CREATE_FAILED, (error) => {
+      sender.fail(`Play: Failed to create room: (${error.code}) ${error.detail}`);
     });
     play.play.connect();
     await waitUntil(() => roomJoined);
