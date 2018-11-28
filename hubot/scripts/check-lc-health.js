@@ -54,7 +54,7 @@ function waitUntil(cond, seconds) {
       if (cond()) {
         resolve();
       } else if (remainingAttempts <= 0) {
-        reject('Timeout reached');
+        reject('Timeout reached but expected condition is not met.');
       } else {
         setTimeout(_wait, 1000);
       }
